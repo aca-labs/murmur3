@@ -13,11 +13,9 @@ module Murmur3
 
     h1 = 0_u64
     h2 = 0_u64
-    h3 = 0_u64
-    h4 = 0_u64
 
     # body
-    n_blocks = length / 16
+    n_blocks = length // 16
 
     n_blocks.times.each do |i|
       # Start positions for getting 8 bytes
@@ -30,23 +28,23 @@ module Murmur3
       k1 = (pointerof(block1).as(UInt64*)).value
       k2 = (pointerof(block2).as(UInt64*)).value
 
-      k1 *= c1
+      k1 = k1 &* c1
       k1 = (k1 << 31) | (k1 >> 33) # ROTL64(k1, 31)
-      k1 *= c2
+      k1 = k1 &* c2
       h1 ^= k1
 
       h1 = (h1 << 27) | (h1 >> 37) # ROTL64(h1, 27)
-      h1 += h2
-      h1 = h1*5 + 0x52dce729_u64
+      h1 = h1 &+ h2
+      h1 = h1 &* 5 &+ 0x52dce729_u64
 
-      k2 *= c2
+      k2 = k2 &* c2
       k2 = (k2 << 33) | (k2 >> 31) # ROTL64(k2, 33)
-      k2 *= c1
+      k2 = k2 &* c1
       h2 ^= k2
 
       h2 = (h2 << 31) | (h2 >> 33) # ROTL64(h2, 31)
-      h2 += h1
-      h2 = h2*5 + 0x38495ab5
+      h2 = h2 &+ h1
+      h2 = h2 &* 5 + 0x38495ab5
     end
 
     # tail
@@ -82,9 +80,9 @@ module Murmur3
     if tail_length >= 9
       k2 ^= tail[8].to_u64
 
-      k2 *= c2
+      k2 = k2 &* c2
       k2 = (k2 << 33) | (k2 >> 31) # ROTL64(k2, 33)
-      k2 *= c1
+      k2 = k2 &* c1
       h2 ^= k2
     end
 
@@ -116,20 +114,20 @@ module Murmur3
       k1 ^= (tail[1].to_u64) << 8
     end
 
-    if tail_length >= 1
+    if tail_length >= tail_length >= 1
       k1 ^= tail[0].to_u64
 
-      k1 *= c1
+      k1 = k1 &* c1
       k1 = (k1 << 31) | (k1 >> 33) # ROTL64(k1, 31)
-      k1 *= c2
+      k1 = k1 &* c2
       h1 ^= k1
     end
 
     h1 ^= length.to_u64
     h2 ^= length.to_u64
 
-    h1 += h2
-    h2 += h1
+    h1 = h1 &+ h2
+    h2 = h2 &+ h1
 
     # finalizer
 
@@ -138,21 +136,19 @@ module Murmur3
 
     # fmix64(h1)
     h1 ^= h1 >> 33
-    h1 *= fmix1
+    h1 = h1 &* fmix1
     h1 ^= h1 >> 33
-    h1 *= fmix2
+    h1 = h1 &* fmix2
     h1 ^= h1 >> 33
 
     # fmix64(h2)
     h2 ^= h2 >> 33
-    h2 *= fmix1
+    h2 = h2 &* fmix1
     h2 ^= h2 >> 33
-    h2 *= fmix2
+    h2 = h2 &* fmix2
     h2 ^= h2 >> 33
 
-    h1 += h2
-    # the following is extraneous since h2 is discarded
-    # h2 += h1
+    h1 = h1 &+ h2
 
     h1
   end
